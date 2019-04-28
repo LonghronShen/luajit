@@ -19,15 +19,15 @@ set ( LUA_INIT "LUA_INIT" CACHE STRING "Environment variable for initial script.
 
 option ( LUA_ANSI "Use only ansi features." OFF )
 option ( LUA_USE_RELATIVE_LOADLIB "Use modified loadlib.c with support for relative paths on posix systems." ON)
-set ( LUA_IDSIZE 60 CACHE NUMBER "gives the maximum size for the description of the source." )
+set ( LUA_IDSIZE 60 CACHE STRING "gives the maximum size for the description of the source." )
 set ( LUA_PROMPT "> " CACHE STRING "Is the default prompt used by stand-alone Lua." )
 set ( LUA_PROMPT2 ">> " CACHE STRING "Is the default continuation prompt used by stand-alone Lua." )
-set ( LUA_MAXINPUT 512 CACHE NUMBER "Is the maximum length for an input line in the stand-alone interpreter.")
+set ( LUA_MAXINPUT 512 CACHE STRING "Is the maximum length for an input line in the stand-alone interpreter.")
 
 # Version
 set ( MAJVER 2 )
-set ( MINVER 0 )
-set ( RELVER 2 )
+set ( MINVER 1 )
+set ( RELVER 0 )
 set ( ABIVER 5.1 )
 set ( NODOTABIVER 51 )
 
@@ -47,11 +47,11 @@ option ( LUAJIT_CPU_SSE2 "Disable SSE2." OFF )
 option ( LUAJIT_CPU_NOCMOV "Disable NOCMOV." OFF )
 
 # Tunable variables
-set ( LUAI_MAXSTACK 65500 CACHE NUMBER "Max. # of stack slots for a thread (<64K)." )
-set ( LUAI_MAXCSTACK 8000 CACHE NUMBER "Max. # of stack slots for a C func (<10K)." )
-set ( LUAI_GCPAUSE 200 CACHE NUMBER "Pause GC until memory is at 200%." )
-set ( LUAI_GCMUL 200 CACHE NUMBER "Run GC at 200% of allocation speed." )
-set ( LUA_MAXCAPTURES 32 CACHE NUMBER "Max. pattern captures." )
+set ( LUAI_MAXSTACK 65500 CACHE STRING "Max. # of stack slots for a thread (<64K)." )
+set ( LUAI_MAXCSTACK 8000 CACHE STRING "Max. # of stack slots for a C func (<10K)." )
+set ( LUAI_GCPAUSE 200 CACHE STRING "Pause GC until memory is at 200%." )
+set ( LUAI_GCMUL 200 CACHE STRING "Run GC at 200% of allocation speed." )
+set ( LUA_MAXCAPTURES 32 CACHE STRING "Max. pattern captures." )
 
 ## SETUP
 set ( LUA_DIRSEP "/" )
@@ -131,34 +131,34 @@ endif ()
 
 ## SOURCES
 # Generate luaconf.h
-configure_file ( src/luaconf.h.in ${CMAKE_CURRENT_BINARY_DIR}/luaconf.h )
+configure_file ( ${CMAKE_CURRENT_SOURCE_DIR}/patches/luaconf.h.in ${CMAKE_CURRENT_BINARY_DIR}/luaconf.h )
 
 set ( LJLIB_C
-  src/lib_base.c
-  src/lib_math.c
-  src/lib_bit.c
-  src/lib_string.c
-  src/lib_table.c
-  src/lib_io.c
-  src/lib_os.c
-  src/lib_debug.c
-  src/lib_jit.c
-  src/lib_ffi.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lib_base.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lib_math.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lib_bit.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lib_string.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lib_table.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lib_io.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lib_os.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lib_debug.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lib_jit.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lib_ffi.c
 )
 if ( LUA_USE_RELATIVE_LOADLIB )
-  list ( APPEND LJLIB_C src/lib_package_rel.c )
+  list ( APPEND LJLIB_C ${CMAKE_CURRENT_SOURCE_DIR}/patches/lib_package_rel.c )
 else ()
-  list ( APPEND LJLIB_C src/lib_package.c )
+  list ( APPEND LJLIB_C ${CMAKE_CURRENT_SOURCE_DIR}/patches/lib_package.c )
 endif ()
 
 ## GENERATE VM
 # Build minilua
-add_executable ( minilua src/host/minilua.c )
+add_executable ( minilua ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/host/minilua.c )
 target_link_libraries ( minilua ${LIBS} )
 
 # Dynasm
-set ( DASM ${CMAKE_CURRENT_SOURCE_DIR}/dynasm/dynasm.lua )
-set ( DASM_T ${CMAKE_CURRENT_SOURCE_DIR}/src/host/buildvm_arch.h )
+set ( DASM ${CMAKE_CURRENT_SOURCE_DIR}/luajit/dynasm/dynasm.lua )
+set ( DASM_T ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/host/buildvm_arch.h )
 
 # 2DO: Proper detection of flags
 set ( DASM_VER "" )
@@ -201,17 +201,17 @@ string ( REPLACE ";" " " DASM_FLAGS_STR "${DASM_FLAGS}")
 message ( "DASM_FLAGS: ${DASM_FLAGS_STR}")
 message ( "DASM_ARCH: ${DASM_ARCH}" )
 
-set ( DASM_DASC ${CMAKE_CURRENT_SOURCE_DIR}/src/vm_${DASM_ARCH}.dasc )
+set ( DASM_DASC ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/vm_${DASM_ARCH}.dasc )
 
 # Generate buildvm arch header
 add_custom_command(OUTPUT ${DASM_T}
   COMMAND minilua ${DASM} ${DASM_FLAGS} -o ${DASM_T} ${DASM_DASC}
-  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/dynasm
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/luajit/dynasm
   DEPENDS minilua
 )
 
 # Buildvm
-file ( GLOB SRC_BUILDVM src/host/buildvm*.c )
+file ( GLOB SRC_BUILDVM ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/host/buildvm*.c )
 add_executable ( buildvm ${SRC_BUILDVM} ${DASM_T} )
 
 macro(add_buildvm_target _target _mode)
@@ -232,7 +232,7 @@ endif ()
 
 add_buildvm_target ( lj_ffdef.h   ffdef   ${LJLIB_C} )
 add_buildvm_target ( lj_bcdef.h  bcdef  ${LJLIB_C} )
-add_buildvm_target ( lj_folddef.h folddef src/lj_opt_fold.c )
+add_buildvm_target ( lj_folddef.h folddef ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lj_opt_fold.c )
 add_buildvm_target ( lj_recdef.h  recdef  ${LJLIB_C} )
 add_buildvm_target ( lj_libdef.h  libdef  ${LJLIB_C} )
 add_buildvm_target ( jit/vmdef.lua  libvm  ${LJLIB_C} )
@@ -247,59 +247,12 @@ SET ( DEPS
 )
 
 ## LuaJIT Library
-include_directories ( ${CMAKE_CURRENT_BINARY_DIR} dynasm src src/host )
+include_directories ( ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/luajit/dynasm ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/host )
 
-set ( LJCORE_C
-  src/lj_gc.c
-  src/lj_err.c
-  src/lj_char.c
-  src/lj_bc.c
-  src/lj_obj.c
-  src/lj_str.c
-  src/lj_tab.c
-  src/lj_func.c
-  src/lj_udata.c
-  src/lj_meta.c
-  src/lj_debug.c
-  src/lj_state.c
-  src/lj_dispatch.c
-  src/lj_vmevent.c
-  src/lj_vmmath.c
-  src/lj_strscan.c
-  src/lj_api.c
-  src/lj_lex.c
-  src/lj_parse.c
-  src/lj_bcread.c
-  src/lj_bcwrite.c
-  src/lj_load.c
-  src/lj_ir.c
-  src/lj_opt_mem.c
-  src/lj_opt_fold.c
-  src/lj_opt_narrow.c
-  src/lj_opt_dce.c
-  src/lj_opt_loop.c
-  src/lj_opt_split.c
-  src/lj_opt_sink.c
-  src/lj_mcode.c
-  src/lj_snap.c
-  src/lj_record.c
-  src/lj_crecord.c
-  src/lj_ffrecord.c
-  src/lj_asm.c
-  src/lj_trace.c
-  src/lj_gdbjit.c
-  src/lj_ctype.c
-  src/lj_cdata.c
-  src/lj_cconv.c
-  src/lj_ccall.c
-  src/lj_ccallback.c
-  src/lj_carith.c
-  src/lj_clib.c
-  src/lj_cparse.c
-  src/lj_lib.c
-  src/lj_alloc.c
-  src/lib_aux.c
-  src/lib_init.c
+file ( GLOB LJCORE_C
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lj_*.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lib_aux.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lib_init.c
   ${LJLIB_C}
 )
 
@@ -307,13 +260,17 @@ add_library ( liblua SHARED ${LJCORE_C} ${DEPS} )
 target_link_libraries ( liblua ${LIBS} )
 set_target_properties ( liblua PROPERTIES OUTPUT_NAME lua CLEAN_DIRECT_OUTPUT 1 )
 
+add_library ( liblua-static STATIC ${LJCORE_C} ${DEPS} )
+target_link_libraries ( liblua-static ${LIBS} )
+set_target_properties ( liblua-static PROPERTIES OUTPUT_NAME lua-static CLEAN_DIRECT_OUTPUT 1 )
+
 ## LuaJIT Executable
-add_executable ( luajit src/luajit.c src/luajit.rc )
+add_executable ( luajit ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/luajit.c ${CMAKE_CURRENT_SOURCE_DIR}/patches/luajit.rc )
 target_link_libraries ( luajit liblua )
 
 # On Windows build a no-console variant also
 if ( LUA_BUILD_WLUA )
-  add_executable ( wluajit WIN32 src/wmain.c src/luajit.c src/luajit.rc )
+  add_executable ( wluajit WIN32 ${CMAKE_CURRENT_SOURCE_DIR}/patches/wmain.c ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/luajit.c ${CMAKE_CURRENT_SOURCE_DIR}/patches/luajit.rc )
   target_link_libraries ( wluajit liblua )
   install_executable ( wluajit )
 endif ()
@@ -321,8 +278,14 @@ endif ()
 ## INSTALL
 install_executable( luajit )
 install_library( liblua )
-install_header( src/lua.h src/luajit.h src/lua.hpp ${CMAKE_CURRENT_BINARY_DIR}/luaconf.h src/lualib.h src/lauxlib.h )
+install_header( 
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lua.h 
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/luajit.h 
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lua.hpp 
+  ${CMAKE_CURRENT_BINARY_DIR}/luaconf.h 
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lualib.h 
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/lauxlib.h )
 
-install_doc ( doc/ )
-install_foo ( etc/ )
+install_doc ( luajit/doc/ )
+install_foo ( luajit/etc/ )
 install_data ( COPYRIGHT README.md )

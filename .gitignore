@@ -10,3 +10,6 @@ _*
 *.dmp
 *.swp
 .tags
+
+build/
+.vscode/
