@@ -256,6 +256,16 @@ file ( GLOB LJCORE_C
   ${LJLIB_C}
 )
 
+file ( GLOB LJCORE_JIT_SCRIPTS
+  ${CMAKE_CURRENT_SOURCE_DIR}/luajit/src/jit/*.lua
+)
+
+foreach(script IN ITEMS ${LJCORE_JIT_SCRIPTS})
+	message(STATUS "Copying ${script} to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/jit/ ...")
+	get_filename_component(script_file_name ${script} NAME)
+	configure_file(${script} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/jit/${script_file_name} COPYONLY)
+endforeach()
+
 add_library ( liblua SHARED ${LJCORE_C} ${DEPS} )
 target_link_libraries ( liblua ${LIBS} )
 set_target_properties ( liblua PROPERTIES OUTPUT_NAME lua CLEAN_DIRECT_OUTPUT 1 )
