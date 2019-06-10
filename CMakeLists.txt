@@ -16,6 +16,7 @@ include ( lua )
 set ( LUA_PATH "LUA_PATH" CACHE STRING "Environment variable to use as package.path." )
 set ( LUA_CPATH "LUA_CPATH" CACHE STRING "Environment variable to use as package.cpath." )
 set ( LUA_INIT "LUA_INIT" CACHE STRING "Environment variable for initial script." )
+set ( LUA_JIT_SCRIPTS_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" CACHE STRING "Environment variable for library script." )
 
 option ( LUA_ANSI "Use only ansi features." OFF )
 option ( LUA_USE_RELATIVE_LOADLIB "Use modified loadlib.c with support for relative paths on posix systems." ON)
