@@ -16,6 +16,7 @@ include ( lua )
 set ( LUA_PATH "LUA_PATH" CACHE STRING "Environment variable to use as package.path." )
 set ( LUA_CPATH "LUA_CPATH" CACHE STRING "Environment variable to use as package.cpath." )
 set ( LUA_INIT "LUA_INIT" CACHE STRING "Environment variable for initial script." )
+set ( LUA_JIT_SCRIPTS_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" CACHE STRING "Environment variable for library script." )
 
 option ( LUA_ANSI "Use only ansi features." OFF )
 option ( LUA_USE_RELATIVE_LOADLIB "Use modified loadlib.c with support for relative paths on posix systems." ON)
@@ -261,9 +262,9 @@ file ( GLOB LJCORE_JIT_SCRIPTS
 )
 
 foreach(script IN ITEMS ${LJCORE_JIT_SCRIPTS})
-	message(STATUS "Copying ${script} to ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/jit/ ...")
+	message(STATUS "Copying ${script} to ${LUA_JIT_SCRIPTS_OUTPUT_DIR}/jit/ ...")
 	get_filename_component(script_file_name ${script} NAME)
-	configure_file(${script} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/jit/${script_file_name} COPYONLY)
+	configure_file(${script} ${LUA_JIT_SCRIPTS_OUTPUT_DIR}/jit/${script_file_name} COPYONLY)
 endforeach()
 
 add_library ( liblua SHARED ${LJCORE_C} ${DEPS} )
